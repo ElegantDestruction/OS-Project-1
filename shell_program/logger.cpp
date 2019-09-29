@@ -31,7 +31,8 @@ logger::logger(string history_filename) {
 		//Attempt to open the history file with a file descriptor, message and exit upon failure
 		int file_descriptor = open((char*)history_filename.c_str(), O_RDONLY);
 		if (file_descriptor < 0) {
-			cout << "ERROR: Cannot open history file. Does file exist?\n" << endl;
+			cout << "ERROR: Constructor cannot open history file '" <<
+				this->history_filename << "'. Does the file exist?\n" << endl;
 			exit(1);
 		}
 	
@@ -75,7 +76,8 @@ void logger::add_history_item(string history_item) {
 		//Attempt to opent the history file with a file descriptor, message and exit upon failure
 		int file_descriptor = open((char*)history_filename.c_str(), O_WRONLY | O_APPEND);
 		if (file_descriptor < 0) {
-			cout << "ERROR: Cannot open history file. Does file exist?\n" << endl;
+			cout << "ERROR: Logger cannot open history file '"<<
+				this->history_filename << "'. Does file exist?\n" << endl;
 			exit(1);
 		}
 
