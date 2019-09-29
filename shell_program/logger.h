@@ -17,4 +17,5 @@ public:
 	std::string get_last_item();				//returns last history item in string
 	void add_history_item(std::string history_item);	//add item to history
 	void print_history();					//print entire history
+	void get_filename();					//TESTING ONLY, remove when done
 };

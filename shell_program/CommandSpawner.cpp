@@ -11,6 +11,7 @@ CommandSpawner::CommandSpawner() {
 	const char *homedir = pw->pw_dir;
 	std::string log_file = std::string(homedir) + "/.jhsh_history";
 	log = new logger(log_file);
+	log->get_filename();
 }
 
 
@@ -20,7 +21,7 @@ CommandSpawner::~CommandSpawner() {
 }
 
 int CommandSpawner::run(std::string command) {
-	log->add_history_item(command);
+	this->log->add_history_item(command);
 	tokenize(command);
 
 	int return_code = 0;
