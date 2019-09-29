@@ -22,7 +22,7 @@ std::string get_console_header() {
 	return output + " " + priv_char + " ";	
 }
 
-int main(int argc, char** argv) {
+int main(void) {
 	std::string console_h = get_console_header();
 	std::string buff;
 	CommandSpawner* spawner = new CommandSpawner();

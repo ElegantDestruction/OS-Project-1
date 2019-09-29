@@ -15,29 +15,43 @@ using namespace std;
 
 //Constructor. Takes in filename as parameter to allow flexible history file usage
 logger::logger(string history_filename) {
-	//Declare necessary variables
-	string current_line;
-	int oldFD = dup(STDIN_FILENO);
-	this->history_filename = history_filename;
 
-	//Attempt to open the history file with a file descriptor, message and exit upon failure
-	int file_descriptor = open((char*)history_filename.c_str(), O_RDONLY);
-	if (file_descriptor < 0) {
-		cout << "ERROR: Cannot open history file. Does file exist?\n" << endl;
-		exit(1);
+	//Make child process to handle file writing because we can't figure out
+	//dup STDIN switching...
+	pid_t pid;
+	pid = fork();
+
+	if (pid == 0) {
+		
+		//Declare necessary variables
+		string current_line;
+		int oldFD = dup(STDIN_FILENO);
+		this->history_filename = history_filename;
+
+		//Attempt to open the history file with a file descriptor, message and exit upon failure
+		int file_descriptor = open((char*)history_filename.c_str(), O_RDONLY);
+		if (file_descriptor < 0) {
+			cout << "ERROR: Constructor cannot open history file '" <<
+				this->history_filename << "'. Does the file exist?\n" << endl;
+			exit(1);
+		}
+	
+		//Switch STDIN to file_descriptor to utilize getline
+		dup2(file_descriptor, 0);
+	
+		//Loop through file and get all the commands
+		while (getline(cin, current_line)) {
+			live_history.push_back(current_line);	
+		}
+	
+		//Switch STDIN back to the console, close file descriptor
+		dup2(oldFD, 0);
+		close(file_descriptor);
+	}
+	else if (pid < 0) {
+		cout << "Failed to create child. History read unsuccessful";
 	}
 
-	//Switch STDIN to file_descriptor to utilize getline
-	dup2(file_descriptor, 0);
-
-	//Loop through file and get all the commands
-	while (getline(cin, current_line)) {
-		live_history.push_back(current_line);	
-	}
-
-	//Switch STDIN back to the console, close file descriptor
-	dup2(oldFD, 0);
-	close(file_descriptor);
 }
 
 //Returns the last history item as a string
@@ -50,25 +64,36 @@ void logger::add_history_item(string history_item) {
 	//Add string to vector
 	live_history.push_back(history_item);
 
-	//Declare necessary variables
-	int oldFD = dup(STDOUT_FILENO);
+	//Make child process to handle file writing because we can't figure out
+	//dup STDIN switching...
+	pid_t pid;
+	pid = fork();
+
+	if (pid == 0) {
+		//Declare necessary variables
+		int oldFD = dup(STDOUT_FILENO);
 	
-	//Attempt to opent the history file with a file descriptor, message and exit upon failure
-	int file_descriptor = open((char*)history_filename.c_str(), O_WRONLY | O_APPEND);
-	if (file_descriptor < 0) {
-		cout << "ERROR: Cannot open history file. Does file exist?\n" << endl;
-		exit(1);
+		//Attempt to opent the history file with a file descriptor, message and exit upon failure
+		int file_descriptor = open((char*)history_filename.c_str(), O_WRONLY | O_APPEND);
+		if (file_descriptor < 0) {
+			cout << "ERROR: Logger cannot open history file '"<<
+				this->history_filename << "'. Does file exist?\n" << endl;
+			exit(1);
+		}
+
+		//Swtich STDOUT to file_descriptor to utilize cout
+		dup2(file_descriptor, 1);
+
+		//Write the string to the file
+		cout << history_item << endl;
+
+		//Switch STDOUT back to the console, close the file descriptor
+		dup2(oldFD, 1);
+		close(file_descriptor);
 	}
-
-	//Swtich STDOUT to file_descriptor to utilize cout
-	dup2(file_descriptor, 1);
-
-	//Write the string to the file
-	cout << history_item << endl;
-
-	//Switch STDOUT back to the console, close the file descriptor
-	dup2(oldFD, 1);
-	close(file_descriptor);
+	else if (pid < 0) {
+		cout << "Failed to create child. History write unsuccessful";
+	}
 }
 
 //Print out the entire history from the live vector

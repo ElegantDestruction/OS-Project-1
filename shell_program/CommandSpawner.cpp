@@ -9,42 +9,43 @@
 CommandSpawner::CommandSpawner() {
 	struct passwd *pw = getpwuid(getuid());
 	const char *homedir = pw->pw_dir;
-	this->log = new logger(std::string(homedir) + "/.jhsh_history");
-	
+	std::string log_file = std::string(homedir) + "/.jhsh_history";
+	log = new logger(log_file);
 }
 
 
 CommandSpawner::~CommandSpawner() {
-	delete this->log;
+	delete log;
 	delete[] current_command;
 }
 
 int CommandSpawner::run(std::string command) {
 	log->add_history_item(command);
-
 	tokenize(command);
+
 	int return_code = 0;
 
-	if ("pwd" == std::string(current_command[0]))
+/*	if ("pwd" == std::string(current_command[0]))
 		return_code = pwd();
 	else if ("history" == std::string(current_command[0])) 
 		return_code = history();
 	else if ("exit" == std::string(current_command[0])) 
 		exit();
-
 	else
-		return_code = exec_p(current_command);
+		std::cout << "Memes";*/
+	return_code = exec_p(current_command);
 
 	return return_code;
 }
 
-void CommandSpawner::tokenize(std::string command) {	
-	char* tokenPtr = strtok(&(command[0]), " \n\r");
-	int pos = 0;
-    while (tokenPtr != NULL) {
-		current_command[pos++] = tokenPtr;
-        tokenPtr = strtok(NULL, " \n\r");
-    } 
+void CommandSpawner::tokenize(std::string command) {
+	char** temp = new char*[100];
+	delete[] current_command;
+	*current_command = *temp;
+	
+	//while
+	
+	//current_command = temp.data;
 }
 
 int CommandSpawner::pwd() {
@@ -56,7 +57,7 @@ int CommandSpawner::pwd() {
 }
 
 int CommandSpawner::history() {
-	log->print_history();
+	//log->print_history();
 	return 0;
 }
 
