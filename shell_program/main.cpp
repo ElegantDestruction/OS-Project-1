@@ -7,6 +7,9 @@
 
 std::string get_console_header() {
 	std::string output = "";
+	std::string purple = "\033[1;35m";
+	std::string cyan = "\033[1;36m";
+	std::string clr = "\033[1;0m";
 	char priv_char = '#';
 	char* user = getlogin();
 	char host[1024];
@@ -19,7 +22,7 @@ std::string get_console_header() {
 	if (host != NULL)
 		output += "@" + std::string(host);
 
-	return output + " " + priv_char + " ";	
+	return cyan + output + clr  + " " + purple + priv_char + clr + " ";	
 }
 
 int main(void) {

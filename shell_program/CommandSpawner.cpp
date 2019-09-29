@@ -52,15 +52,15 @@ void CommandSpawner::tokenize(std::string command) {
 }
 
 int CommandSpawner::pwd() {
-	char* buff = NULL;
-	size_t n = 0;
+	char* buff = new char[1000];
+	size_t n = 1000;
 	getcwd(buff, n);
 	std::cout << buff << std::endl;
 	return 0;
 }
 
 int CommandSpawner::history() {
-	//log->print_history();
+	log->print_history();
 	return 0;
 }
 
