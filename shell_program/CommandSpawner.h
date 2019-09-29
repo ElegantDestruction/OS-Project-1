@@ -12,9 +12,10 @@ class CommandSpawner {
 		int run(std::string command);
 		
 	private:
-		logger history;
+		logger* log;
+		char** current_command; 
 		
-		char* tokenize(std::string command);
+		void tokenize(std::string command);
 		// Prints working directory
 		int pwd();
 		// Runs logger's history print command
@@ -22,5 +23,5 @@ class CommandSpawner {
 		// Quit shell
 		void exit();
 		// Run executable
-		int exec_p(char* command);
+		int exec_p(char** command);
 };
