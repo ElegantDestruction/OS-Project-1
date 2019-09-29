@@ -24,18 +24,22 @@ std::string get_console_header() {
 
 int main(void) {
 	std::string console_h = get_console_header();
-	std::string buff;
+	std::string buff = "";
 	CommandSpawner* spawner = new CommandSpawner();
 	int return_code = 0;
-
+	std::cout << console_h;
+	
 	while(true) {
-		std::cout << console_h;
 		getline(std::cin, buff);
-		return_code = spawner->run(buff);
-
-		if (return_code > 0) {
-			std::cout << "Error: return code " << return_code << std::endl;
+		if (buff != "") {
+			return_code = spawner->run(buff);
+			if (return_code > 0) {
+				std::cout << "Error: return code " << return_code << std::endl;
+			}
+			std::cout << console_h;
 		}
+		fflush(stdin);
+		buff = "";
 	}
 
 	// This shouldn't be reachable	
