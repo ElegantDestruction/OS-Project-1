@@ -7,6 +7,7 @@
 #include<fcntl.h>
 #include<iostream>
 #include<fstream>
+#include<sys/wait.h>
 
 using namespace std;
 
@@ -16,42 +17,24 @@ using namespace std;
 //Constructor. Takes in filename as parameter to allow flexible history file usage
 logger::logger(string history_filename) {
 
-	//Make child process to handle file writing because we can't figure out
-	//dup STDIN switching...
-	pid_t pid;
-	pid = fork();
-
-	if (pid == 0) {
-		
-		//Declare necessary variables
-		string current_line;
-		int oldFD = dup(STDIN_FILENO);
-		this->history_filename = history_filename;
-
-		//Attempt to open the history file with a file descriptor, message and exit upon failure
-		int file_descriptor = open((char*)history_filename.c_str(), O_RDONLY);
-		if (file_descriptor < 0) {
-			cout << "ERROR: Constructor cannot open history file '" <<
-				this->history_filename << "'. Does the file exist?\n" << endl;
-			exit(1);
-		}
+	string current_line;
+	this->history_filename = history_filename;
 	
-		//Switch STDIN to file_descriptor to utilize getline
-		dup2(file_descriptor, 0);
-	
-		//Loop through file and get all the commands
-		while (getline(cin, current_line)) {
-			live_history.push_back(current_line);	
-		}
-	
-		//Switch STDIN back to the console, close file descriptor
-		dup2(oldFD, 0);
-		close(file_descriptor);
-	}
-	else if (pid < 0) {
-		cout << "Failed to create child. History read unsuccessful";
+	//Attempt to open the history file with a file descriptor, message and exit upon failure
+	ifstream file_descriptor(history_filename); // = open((char*)history_filename.c_str(), O_RDONLY);
+	if (!file_descriptor) {
+		cout << "ERROR: Constructor cannot open history file '" <<
+		this->history_filename << "'. Does the file exist?\n" << endl;
+		exit(1);
 	}
 
+	//Loop through file and get all the commands
+	while (getline(file_descriptor, current_line)) {
+		live_history.push_back(current_line);	
+	}
+
+	//Switch STDIN back to the console, close file descriptor
+	file_descriptor.close();
 }
 
 //Returns the last history item as a string
@@ -64,36 +47,21 @@ void logger::add_history_item(string history_item) {
 	//Add string to vector
 	live_history.push_back(history_item);
 
-	//Make child process to handle file writing because we can't figure out
-	//dup STDIN switching...
-	pid_t pid;
-	pid = fork();
+	//Attempt to opent the history file with a file descriptor, message and exit upon failure
+	ofstream file_descriptor(history_filename, fstream::app); // = open((char*)history_filename.c_str(), O_WRONLY | O_APPEND);
 
-	if (pid == 0) {
-		//Declare necessary variables
-		int oldFD = dup(STDOUT_FILENO);
-	
-		//Attempt to opent the history file with a file descriptor, message and exit upon failure
-		int file_descriptor = open((char*)history_filename.c_str(), O_WRONLY | O_APPEND);
-		if (file_descriptor < 0) {
-			cout << "ERROR: Logger cannot open history file '"<<
-				this->history_filename << "'. Does file exist?\n" << endl;
-			exit(1);
-		}
-
-		//Swtich STDOUT to file_descriptor to utilize cout
-		dup2(file_descriptor, 1);
-
-		//Write the string to the file
-		cout << history_item << endl;
-
-		//Switch STDOUT back to the console, close the file descriptor
-		dup2(oldFD, 1);
-		close(file_descriptor);
+	if (!file_descriptor) {
+		cout << "ERROR: Logger cannot open history file '"<<
+		this->history_filename << "'. Does file exist?\n" << endl;
+		exit(1);
 	}
-	else if (pid < 0) {
-		cout << "Failed to create child. History write unsuccessful";
-	}
+
+	//Write the string to the file
+	file_descriptor << history_item << endl;
+
+	//Switch STDOUT back to the console, close the file descriptor
+	file_descriptor.close();
+
 }
 
 //Print out the entire history from the live vector
@@ -102,4 +70,8 @@ void logger::print_history() {
 	for (unsigned i = 0; i < live_history.size(); i++) {
 		cout << live_history[i] << endl;
 	}
+}
+
+void logger::get_filename() {
+	cout << history_filename << endl;
 }
