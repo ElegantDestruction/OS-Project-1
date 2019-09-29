@@ -1,6 +1,7 @@
 #include "CommandSpawner.h"
 #include "logger.h"
-#include <string.h>
+#include <cstring>
+#include <string>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <pwd.h>
@@ -11,7 +12,7 @@ CommandSpawner::CommandSpawner() {
 	const char *homedir = pw->pw_dir;
 	std::string log_file = std::string(homedir) + "/.jhsh_history";
 	log = new logger(log_file);
-	log->get_filename();
+	current_command = new char*[1000];
 }
 
 
@@ -26,27 +27,28 @@ int CommandSpawner::run(std::string command) {
 
 	int return_code = 0;
 
-/*	if ("pwd" == std::string(current_command[0]))
+	if ("pwd" == std::string(current_command[0]))
 		return_code = pwd();
-	else if ("history" == std::string(current_command[0])) 
+	else if ("history" == std::string(current_command[0]))
 		return_code = history();
-	else if ("exit" == std::string(current_command[0])) 
+	else if ("exit" == std::string(current_command[0]))
 		exit();
 	else
-		std::cout << "Memes";*/
-	return_code = exec_p(current_command);
+		return_code = exec_p(current_command);
 
 	return return_code;
 }
 
 void CommandSpawner::tokenize(std::string command) {
-	char** temp = new char*[100];
-	delete[] current_command;
-	*current_command = *temp;
-	
-	//while
-	
-	//current_command = temp.data;
+	char* cmd = new char[command.length()+1];
+	std::strcpy(cmd, command.c_str());
+	int n = 0;
+    char *tokenPtr = std::strtok(cmd, " \n\r");
+    while (tokenPtr != NULL) {
+        current_command[n++] = tokenPtr;
+        tokenPtr = std::strtok(NULL, " \n\r");
+    }
+	current_command[n] = NULL;
 }
 
 int CommandSpawner::pwd() {
@@ -69,10 +71,9 @@ int CommandSpawner::exec_p(char** command) {
 	else if (pid == 0) {
 		execvp(command[0], command);
 	}
-	return wait(0);
+	return WIFEXITED(wait(0));
 }
 
 void CommandSpawner::exit() {
 	std::exit(0);
 }
-
