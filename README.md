@@ -3,9 +3,9 @@ Project 1 Repository For Operating Systems Fall 2019
 \
 General Requirements:  
 - `Exit' Exits the shell
-- implement pwd (use getcdw()?)
+- implement pwd (use getcdw())
 - implement ls, and allow it to be used with flags and relative and/or absolute pathnames
-- Keep a history of commands (he wants this in a dynamic list. Think we can cheese it with a .bash_history file?)
+- Keep a history of commands (use vector)
 - Implement < and > using STDIN and STDOUT redirection
 - Implement simple pipes | (use more than one process when doing this ie. pipe() and wait())
 
