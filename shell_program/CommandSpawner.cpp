@@ -161,6 +161,19 @@ int CommandSpawner::run_redirect(int position){
 	}
 	else if (std::string(current_command[position]) == ">") {
 
+		//Check to see if file exists by attempting to open it
+		std::fstream file_descriptor;
+		file_descriptor.open(std::string(second_half[0]), std::fstream::in);
+
+		//If the file doesn't exist, make a new one
+		while (!file_descriptor) {
+			//Create the file with trunc and write modes
+			file_descriptor.open(std::string(second_half[0]), std::fstream::trunc | std::fstream::out);
+		}
+
+		//Ensure the file is closed for the rest of the operation
+		file_descriptor.close();
+
 		//Do output redirection
 		int oldFD = dup(STDOUT_FILENO);
 		int fd = open(second_half[0], O_WRONLY | O_CREAT | O_APPEND);
