@@ -24,4 +24,9 @@ class CommandSpawner {
 		void exit();
 		// Run executable
 		int exec_p(char** command);
+
+		//Redirection methods
+		int check_redirect(); 			//Detects if <> is used
+		int run_redirect(int position);		//Runs command with redirect in mind
+
 };
