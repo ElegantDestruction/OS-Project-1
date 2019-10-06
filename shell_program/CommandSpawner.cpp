@@ -112,6 +112,8 @@ int CommandSpawner::check_redirect() {
 int CommandSpawner::run_redirect(int position){
 	//Create two more double pointers to handle the current_command
 	char** first_half, **second_half;
+	first_half = new char*[1000];
+	second_half = new char*[1000];
 	int return_code;
 	int position_iterator = 0;
 	
@@ -124,23 +126,15 @@ int CommandSpawner::run_redirect(int position){
 	//Null terminate first half
 	first_half[position_iterator] = NULL;
 	
-	//TODO
-	std::cout << "successfully split the first half of the command, second half is failing" << std::endl;
-
 	//Grab second half of the command
 	position_iterator = 0;
 	while (current_command[position_iterator + position + 1]) {
-		//TODO
-		std::cout << current_command[position_iterator + position + 1] << "\n";
-		std::cout << "Break\n";
-		std::cout << "second_half " << second_half[position_iterator] << "\n";
 		second_half[position_iterator] = current_command[position_iterator + position + 1];
 		position_iterator++;
 	}
 	//Null terminate the second half
 	second_half[position_iterator] = NULL;
 
-	std::cout << "successfully split the command, shouldn't be failing here" << std::endl;
 	//Determine whether to do input or output redirection
 	if (std::string(current_command[position]) == "<") {
 		//Do input redirection
@@ -166,6 +160,7 @@ int CommandSpawner::run_redirect(int position){
 		return return_code;
 	}
 	else if (std::string(current_command[position]) == ">") {
+
 		//Do output redirection
 		int oldFD = dup(STDOUT_FILENO);
 		int fd = open(second_half[0], O_WRONLY | O_CREAT | O_APPEND);
