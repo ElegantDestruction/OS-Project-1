@@ -35,19 +35,17 @@ int CommandSpawner::run(std::string command) {
 			else if (pid == 0) {
 				exec(*c);
 			} else {
-				kids.push_back(pid);
+				waitpid(pid, 0, 0);
+				if (c->in != 0)
+				   close(c->in);	
+				if (c->out != 1)
+				   close(c->out);	
 			}
 		} else {
 			exit_f = 1;
 		}
 	}
 		
-
-	for (pid_t p : kids) {
-		std::cout << p << std::endl;
-		while(!WIFEXITED(waitpid(p, 0, WNOHANG)));
-	}
-	
 	if (exit_f == 1) {
 		std::exit(0);
 	}
@@ -58,9 +56,10 @@ int CommandSpawner::run(std::string command) {
 // This is run by a child. Shouldn't be run by parent.
 void CommandSpawner::exec(struct Command cmd) {
 	int return_code = 0;
-	dup2(cmd.in, 0);
-	dup2(cmd.out, 1);
-	dup2(cmd.err, 2);
+	if (cmd.in != 0)
+		dup2(cmd.in, 0);
+	if (cmd.out != 1)	
+		dup2(cmd.out, 1);
 
 	if ("pwd" == std::string(cmd.command[0]))
 		return_code = pwd();
@@ -69,7 +68,6 @@ void CommandSpawner::exec(struct Command cmd) {
 	else
 		return_code = exec_p(cmd.command);
 	
-
 	_exit(return_code);
 }
 
