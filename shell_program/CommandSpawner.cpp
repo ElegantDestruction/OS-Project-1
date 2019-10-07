@@ -8,45 +8,80 @@
 #include <iostream>
 #include <fstream>
 #include <fcntl.h>
+#include <vector>
 
 CommandSpawner::CommandSpawner() {
 	struct passwd *pw = getpwuid(getuid());
 	const char *homedir = pw->pw_dir;
 	std::string log_file = std::string(homedir) + "/.jhsh_history";
 	log = new logger(log_file);
-	current_command = new char*[1000];
 }
 
 
 CommandSpawner::~CommandSpawner() {
 	delete log;
-	delete[] current_command;
 }
 
 int CommandSpawner::run(std::string command) {
 	this->log->add_history_item(command);
-	tokenize(command);
-	
+	std::vector<struct Command*> command_list  = tokenize(command);
 	int return_code = 0;
+	int exit_f = 0;
 
 	//Check for redirect
 	int redirect_position = check_redirect();
 	if (redirect_position != -1) {
-		return_code = run_redirect(redirect_position);
+		return run_redirect(redirect_position);
 	}
-	else if ("pwd" == std::string(current_command[0]))
-		return_code = pwd();
-	else if ("history" == std::string(current_command[0]))
-		return_code = history();
-	else if ("exit" == std::string(current_command[0]))
-		exit();
-	else
-		return_code = exec_p(current_command);
+
+	for (struct Command* c : command_list) {
+		if (std::string(c->command[0]) == "cd") {
+			cd(c->command[1]);
+		} else if (std::string(c->command[0]) == "exit") {
+			exit_f = 1;
+		}
+		else {
+			pid_t pid = fork();
+			if (pid < 0)
+				return 1;
+			else if (pid == 0) {
+				exec(*c);
+			} else {
+				waitpid(pid, 0, 0);
+				if (c->in != 0)
+				   close(c->in);
+				if (c->out != 1)
+				   close(c->out);
+			}
+		}
+	}
+
+	if (exit_f == 1) {
+		std::exit(0);
+	}
 
 	return return_code;
 }
 
-void CommandSpawner::tokenize(std::string command) {
+// This is run by a child. Shouldn't be run by parent.
+void CommandSpawner::exec(struct Command cmd) {
+	int return_code = 0;
+	if (cmd.in != 0)
+		dup2(cmd.in, 0);
+	if (cmd.out != 1)
+		dup2(cmd.out, 1);
+	
+	if ("pwd" == std::string(current_command[0]))
+		return_code = pwd();
+	else if ("history" == std::string(cmd.command[0]))
+		return_code = history();
+	else
+		return_code = exec_p(cmd.command);
+
+	_exit(return_code);
+}
+
+std::vector<struct CommandSpawner::Command*> CommandSpawner::tokenize(std::string command) {
 	char* cmd = new char[command.length()+1];
 	std::strcpy(cmd, command.c_str());
 	int n = 0;
@@ -56,6 +91,26 @@ void CommandSpawner::tokenize(std::string command) {
         tokenPtr = std::strtok(NULL, " \n\r");
     }
 	current_command[n] = NULL;
+
+	std::vector<struct Command*> cmds;
+	struct Command *current_cmd = new struct Command;
+	current_cmd->command = &current_command[0];
+	for(int x = 0; x < n; x++) {
+		if (std::string(current_command[x]) == "|") {
+			int fds[3];
+			pipe(fds);
+			current_command[x] = NULL;
+			current_cmd->out = fds[1];
+			cmds.push_back(current_cmd);
+			current_cmd = new struct Command;
+			current_cmd->in = fds[0];
+			current_cmd->command = &(current_command[x + 1]);
+		}
+	}
+	cmds.push_back(current_cmd);
+	current_cmd = NULL;
+	return cmds;
+
 }
 
 int CommandSpawner::pwd() {
@@ -71,18 +126,24 @@ int CommandSpawner::history() {
 	return 0;
 }
 
+int CommandSpawner::cd(char* path) {
+	if(chdir(path) == 0)
+		return 0;
+	else
+		return 1;
+}
+
 int CommandSpawner::exec_p(char** command) {
 	pid_t pid = fork();
 	if (pid < 0)
 		return 1;
 	else if (pid == 0) {
-		execvp(command[0], command);
+		if(execvp(command[0], command) == -1) {
+			std::cout << "Command \"" << command[0] << "\" not found.\n";
+			return 1;
+		}
 	}
-	return WIFEXITED(wait(0));
-}
-
-void CommandSpawner::exit() {
-	std::exit(0);
+	return  WIFEXITED(waitpid(pid, 0, 0));
 }
 
 
@@ -100,7 +161,7 @@ int CommandSpawner::check_redirect() {
 		else if (std::string(current_command[position]) == "<") {
 			return_value = position;
 		}
-		
+
 		//Increment position, and continue search
 		position++;
 	}
@@ -116,7 +177,7 @@ int CommandSpawner::run_redirect(int position){
 	second_half = new char*[1000];
 	int return_code;
 	int position_iterator = 0;
-	
+
 	//Grab first half
 	position_iterator = 0;
 	while (position_iterator < position) {
@@ -125,7 +186,7 @@ int CommandSpawner::run_redirect(int position){
 	}
 	//Null terminate first half
 	first_half[position_iterator] = NULL;
-	
+
 	//Grab second half of the command
 	position_iterator = 0;
 	while (current_command[position_iterator + position + 1]) {
@@ -177,7 +238,7 @@ int CommandSpawner::run_redirect(int position){
 		//Do output redirection
 		int oldFD = dup(STDOUT_FILENO);
 		int fd = open(second_half[0], O_WRONLY | O_CREAT | O_APPEND);
-		
+
 		//Switch STDOUT to be the fd given above
 		dup2(fd,1);
 
@@ -202,13 +263,3 @@ int CommandSpawner::run_redirect(int position){
 		return 1;
 	}
 }
-
-
-
-
-
-
-
-
-
-
