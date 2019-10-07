@@ -25,9 +25,15 @@ CommandSpawner::~CommandSpawner() {
 int CommandSpawner::run(std::string command) {
 	this->log->add_history_item(command);
 	std::vector<struct Command*> command_list  = tokenize(command);
-	std::vector<pid_t> kids;
 	int return_code = 0;
 	int exit_f = 0;
+
+	//Check for redirect
+	int redirect_position = check_redirect();
+	if (redirect_position != -1) {
+		return run_redirect(redirect_position);
+	}
+
 	for (struct Command* c : command_list) {
 		if (std::string(c->command[0]) != "exit") {
 			pid_t pid = fork();
@@ -62,12 +68,7 @@ void CommandSpawner::exec(struct Command cmd) {
 	if (cmd.out != 1)
 		dup2(cmd.out, 1);
 
-	//Check for redirect
-	int redirect_position = check_redirect();
-	if (redirect_position != -1) {
-		return_code = run_redirect(redirect_position);
-	}
-	else if ("pwd" == std::string(current_command[0]))
+	if ("pwd" == std::string(current_command[0]))
 		return_code = pwd();
 	else if ("history" == std::string(cmd.command[0]))
 		return_code = history();

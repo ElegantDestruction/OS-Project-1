@@ -1,0 +1,9 @@
+build
+CommandSpawner.cpp
+CommandSpawner.h
+heck.txt
+logger.cpp
+logger.h
+main.cpp
+meson.build
+TODO
