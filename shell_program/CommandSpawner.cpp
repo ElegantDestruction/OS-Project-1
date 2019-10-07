@@ -35,7 +35,12 @@ int CommandSpawner::run(std::string command) {
 	}
 
 	for (struct Command* c : command_list) {
-		if (std::string(c->command[0]) != "exit") {
+		if (std::string(c->command[0]) == "cd") {
+			cd(c->command[1]);
+		} else if (std::string(c->command[0]) == "exit") {
+			exit_f = 1;
+		}
+		else {
 			pid_t pid = fork();
 			if (pid < 0)
 				return 1;
@@ -48,8 +53,6 @@ int CommandSpawner::run(std::string command) {
 				if (c->out != 1)
 				   close(c->out);
 			}
-		} else {
-			exit_f = 1;
 		}
 	}
 
@@ -67,7 +70,7 @@ void CommandSpawner::exec(struct Command cmd) {
 		dup2(cmd.in, 0);
 	if (cmd.out != 1)
 		dup2(cmd.out, 1);
-
+	
 	if ("pwd" == std::string(current_command[0]))
 		return_code = pwd();
 	else if ("history" == std::string(cmd.command[0]))
@@ -123,14 +126,24 @@ int CommandSpawner::history() {
 	return 0;
 }
 
+int CommandSpawner::cd(char* path) {
+	if(chdir(path) == 0)
+		return 0;
+	else
+		return 1;
+}
+
 int CommandSpawner::exec_p(char** command) {
 	pid_t pid = fork();
 	if (pid < 0)
 		return 1;
 	else if (pid == 0) {
-		execvp(command[0], command);
+		if(execvp(command[0], command) == -1) {
+			std::cout << "Command \"" << command[0] << "\" not found.\n";
+			return 1;
+		}
 	}
-	return WIFEXITED(waitpid(pid, 0, 0));
+	return  WIFEXITED(waitpid(pid, 0, 0));
 }
 
 

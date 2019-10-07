@@ -37,7 +37,8 @@ class CommandSpawner {
 		int history();
 		// Run executable
 		int exec_p(char** command);
-
+		// change directory
+		int cd(char* path);
 		//Redirection methods
 		int check_redirect(); 			//Detects if <> is used
 		int run_redirect(int position);		//Runs command with redirect in mind
